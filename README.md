@@ -17,3 +17,8 @@ Run the test with Maven's concurrency option:
 ```
 $ mvn install --errors --no-transfer-progress -Dcheckstyle.skip -T 10C
 ```
+
+
+```
+ mvn test --errors --no-transfer-progress -Dcheckstyle.skip -T 10C -Dtest=BatcherImplTest
+```
