@@ -47,6 +47,15 @@
 
     <modules>
         <module>gax-test00</module>
+        <module>gax-test01</module>
+        <module>gax-test02</module>
+        <module>gax-test03</module>
+        <module>gax-test04</module>
+        <module>gax-test05</module>
+        <module>gax-test06</module>
+        <module>gax-test07</module>
+        <module>gax-test08</module>
+        <module>gax-test09</module>
     </modules>
 
     <build>
