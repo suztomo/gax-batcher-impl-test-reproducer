@@ -2,7 +2,7 @@
 
 # Replicates the gax-test00 module to gax-test01 to gax-test09.
 
-COUNT=9
+COUNT=99
 
 for N in `seq ${COUNT}`; do
   suffix=$(printf "%02d" "${N}")
