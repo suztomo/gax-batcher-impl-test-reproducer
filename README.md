@@ -78,3 +78,5 @@ But was 0 times.
 [INFO] gax-test33 ......................................... SUCCESS [  2.489 s]
 [INFO] gax-test34 ......................................... SUCCESS [  2.451 s]
 ```
+
+I tried on my MacBook Pro (4 cores) but I couldn't reproduce the issue. Use gLinux.
