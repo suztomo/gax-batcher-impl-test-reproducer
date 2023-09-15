@@ -10,6 +10,9 @@ for N in `seq ${COUNT}`; do
   rm -rf "${module}"
   cp -r gax-test00 $module
   sed -i.bak -e "s/gax-test00/gax-test${suffix}/" "${module}/pom.xml"
+  sed -i.bak -e "s/gax-test00/gax-test${suffix}/" "${module}/src/test/java/com/google/api/gax/batching/BatcherImplTest.java"
+  sed -i.bak -e "s/gax_test00/gax_test${suffix}/" "${module}/src/test/java/com/google/api/gax/batching/BatcherImplTest.java"
+  sed -i.bak -e "s/gax-test00/gax-test${suffix}/" "${module}/src/test/resources/logback-test.xml"
   echo "        <module>${module}</module>"
 done
 

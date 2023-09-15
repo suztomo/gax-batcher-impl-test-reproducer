@@ -53,17 +53,7 @@ import com.google.common.collect.Queues;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Filter;
@@ -79,10 +69,24 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.slf4j.MDC;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.threeten.bp.Duration;
 
 @RunWith(JUnit4.class)
 public class BatcherImplTest {
+
+  private static final Logger logger = Logger.getLogger(BatcherImplTest.class.getName());
+
+  static {
+    // jul-to-slf4j bridge needs special instruction to set up
+    // https://www.slf4j.org/api/org/slf4j/bridge/SLF4JBridgeHandler.html
+
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
+
+    MDC.put("module", "gaxtest-00");
+  }
 
   private static final ScheduledExecutorService EXECUTOR =
       Executors.newSingleThreadScheduledExecutor();
@@ -831,7 +835,8 @@ public class BatcherImplTest {
   }
 
   @Test
-  public void testThrottlingBlocking() throws Exception {
+  public void testThrottlingBlocking_gax_test00() throws Exception {
+    logger.info("Starting testThrottlingBlocking");
     BatchingSettings settings =
         BatchingSettings.newBuilder()
             .setElementCountThreshold(1L)
@@ -862,41 +867,53 @@ public class BatcherImplTest {
             flowController,
             callContext)) {
       flowController.reserve(1, 1);
+      CountDownLatch latch = new CountDownLatch(1);
       Future future =
           executor.submit(
               new Runnable() {
                 @Override
                 public void run() {
+                  logger.fine("calling batcher.add(1)");
+                  latch.countDown();
                   batcher.add(1);
+                  logger.fine("batcher.add(1) finished");
                 }
               });
-      // Add a little delay ensuring that the next step starts after batcher.add(1)
-      Thread.sleep(10);
+      latch.await();
       executor.submit(
           () -> {
             try {
+              logger.fine("start sleeping " + throttledTime + " ms");
               Thread.sleep(throttledTime);
+              logger.fine("Sleep finished. Calling flowController.release()");
               flowController.release(1, 1);
+              logger.fine("finished flowController.release()");
             } catch (InterruptedException e) {
+              logger.fine("It hit InterruptedException");
             }
           });
 
       try {
         future.get(10, TimeUnit.MILLISECONDS);
+        logger.fine("future.get(10, TimeUnit.MILLISECONDS) returned unexpectedly");
         assertWithMessage("adding elements to batcher should be blocked by FlowControlled").fail();
       } catch (TimeoutException e) {
         // expected
+        logger.fine("Caught TimeoutException as expected");
       }
 
       try {
+        logger.fine("calling future.get(3, TimeUnit.SECONDS)");
         future.get(3, TimeUnit.SECONDS);
+        logger.fine("finished future.get(3, TimeUnit.SECONDS)");
       } catch (TimeoutException e) {
         assertWithMessage("adding elements to batcher should not be blocked").fail();
       }
 
       // Mockito recommends using verify() as the ONLY way to interact with Argument
       // captors - otherwise it may incur in unexpected behaviour
-      Mockito.verify(callContext, Mockito.timeout(100)).withOption(key.capture(), value.capture());
+      Mockito.verify(callContext, Mockito.timeout(100).description("[gax-test00] callContext.withOption was not called")).withOption(key.capture(), value.capture());
+      logger.fine("Mockito.verify(callContext, ...) succeeded");
 
       // Verify that throttled time is recorded in ApiCallContext
       assertThat(key.getValue()).isSameInstanceAs(Batcher.THROTTLED_TIME_KEY);
@@ -904,6 +921,7 @@ public class BatcherImplTest {
     } finally {
       executor.shutdownNow();
     }
+    logger.info("Finishing testThrottlingBlocking");
   }
 
   @Test

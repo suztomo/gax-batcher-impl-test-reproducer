@@ -4,6 +4,12 @@ A Maven project to reproduce GAX's flaky BatcherImplTest https://github.com/goog
 
 # How to run
 
+Copy the code to gax-test00:
+
+```
+$ rm -rf ./gax-test00/src/test ;cp -r ~/sdk-platform-java/gax-java/gax/src/test ./gax-test00/src/test; cp ~/sdk-platform-java/gax-java/gax/src/main/java/com/google/api/gax/batching/BatcherImpl.java ./gax-test00/src/test/java/com/google/api/gax/batching
+```
+
 Prepare gax-test01 to gax-test09:
 
 ```
@@ -15,7 +21,7 @@ $ sh replicate_module.sh
 Run the test with Maven's concurrency option:
 
 ```
-~/gax-batcher-impl-test-reproducer$ mvn test --errors --no-transfer-progress -Dcheckstyle.skip -T 2C -Dtest='BatcherImplTest#testThrottlingBlocking'
+~/gax-batcher-impl-test-reproducer$ mvn test --errors --no-transfer-progress -Dcheckstyle.skip -T 2C -Dtest='BatcherImplTest#testThrottlingBlocking*'
 ```
 
 With 16 core CPU Linux machine, some modules fail (32 concurrency):
